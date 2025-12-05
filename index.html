@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rake - Vector-first SIMD Programming</title>
-  <meta name="description" content="A programming language that makes CPU SIMD explicit. Write clean code, get full vector performance.">
+  <meta name="description" content="A programming language that makes SIMD vectors and SPIR-V explicit. Write clean code, get full vector performance.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -414,8 +414,14 @@
         </div>
       </div>
       <p>
+        Anti-hype disclaimer: this is not magic. It's the power of exclusively targeting
+        vector and GPU dialects of MLIR from day one. The backend engineers and architecture
+        designers are the experts, rake just provides an ergonomic frontend which is much easier
+        to do when you're not trying to embed it inside the grammar of an entirely different paradigm.
         Rake generates clean AVX2 assembly with inlined functions, optimal mask handling,
         and no unnecessary memory traffic.
+
+        And things will only get better as OCaml MLIR support improves.
       </p>
     </section>
 
