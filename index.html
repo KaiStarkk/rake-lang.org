@@ -399,29 +399,162 @@
     </section>
 
     <section>
+      <h2>Over: Iterate Over Packs</h2>
+      <p>
+        A <strong>run</strong> function is an entry point that processes pack data.
+        The <strong>over</strong> loop iterates in SIMD-width chunks with automatic tail masking.
+      </p>
+      <div class="code-block">
+<pre><span class="comment">~~ Process all rays in a pack (automatic SIMD chunking)</span>
+<span class="keyword">run</span> <span class="fn">render_all</span> (rays <span class="op">:</span> <span class="type">Ray pack</span>) (<span class="scalar">&lt;count&gt;</span> <span class="op">:</span> <span class="type">int64</span>)
+               (<span class="scalar">&lt;sphere_cx&gt;</span> <span class="op">:</span> <span class="type">float</span>) (<span class="scalar">&lt;sphere_cy&gt;</span> <span class="op">:</span> <span class="type">float</span>)
+               (<span class="scalar">&lt;sphere_cz&gt;</span> <span class="op">:</span> <span class="type">float</span>) (<span class="scalar">&lt;sphere_r&gt;</span> <span class="op">:</span> <span class="type">float</span>)
+               <span class="op">-&gt;</span> result<span class="op">:</span>
+  <span class="keyword">over</span> rays, <span class="scalar">&lt;count&gt;</span> <span class="op">|&gt;</span> ray<span class="op">:</span>
+    <span class="keyword">let</span> t <span class="op">=</span> intersect_flat(ray.ox, ray.oy, ray.oz,
+                           ray.dx, ray.dy, ray.dz,
+                           <span class="scalar">&lt;sphere_cx&gt;</span>, <span class="scalar">&lt;sphere_cy&gt;</span>,
+                           <span class="scalar">&lt;sphere_cz&gt;</span>, <span class="scalar">&lt;sphere_r&gt;</span>)
+    t</pre>
+      </div>
+      <p>
+        <code>over</code> handles the loop over pack data, loading 8 elements at a time (AVX),
+        and generating masked stores for the final partial iteration.
+      </p>
+    </section>
+
+    <section>
       <h2>Performance</h2>
       <p>
-        Ray-sphere intersection benchmark, 8 million rays with 50% hit/miss divergence:
+        Raytracer benchmark (1920×1080, 10 spheres, 100 iterations):
       </p>
       <div class="benchmark">
         <div class="benchmark-row">
-          <span class="benchmark-label">C (auto-vectorized, -O3 -march=native)</span>
-          <span class="benchmark-value">207.89 M rays/sec</span>
+          <span class="benchmark-label">C Scalar</span>
+          <span class="benchmark-value">60.90 ms (16.4 FPS)</span>
         </div>
         <div class="benchmark-row">
-          <span class="benchmark-label">Rake</span>
-          <span class="benchmark-value highlight">677.89 M rays/sec</span>
+          <span class="benchmark-label">C SIMD (hand-written AVX2 intrinsics)</span>
+          <span class="benchmark-value">29.82 ms &mdash; 2.04× faster</span>
+        </div>
+        <div class="benchmark-row">
+          <span class="benchmark-label">Rake SIMD</span>
+          <span class="benchmark-value highlight">29.85 ms &mdash; 2.04× faster</span>
         </div>
       </div>
       <p>
+        <strong>Rake matches hand-written AVX2 intrinsics</strong>&mdash;with clean, readable syntax.
         Anti-hype disclaimer: this is not magic. It's the power of exclusively targeting
         vector and GPU dialects of MLIR from day one. The backend engineers and architecture
-        designers are the experts, rake just provides an ergonomic frontend which is much easier
+        designers are the experts; Rake just provides an ergonomic frontend which is much easier
         to do when you're not trying to embed it inside the grammar of an entirely different paradigm.
-        Rake generates clean AVX2 assembly with inlined functions, optimal mask handling,
-        and no unnecessary memory traffic.
+      </p>
+    </section>
 
-        And things will only get better as OCaml MLIR support improves.
+    <section>
+      <h2>Rake vs. C Intrinsics</h2>
+      <p>
+        Ray-sphere intersection: same algorithm, same performance, different readability.
+      </p>
+      <h3>C with AVX2 Intrinsics</h3>
+      <div class="code-block">
+<pre><span class="comment">// 30 lines of intrinsics nobody wants to debug</span>
+<span class="keyword">static inline</span> __m256 intersect_simd(__m256 ox, __m256 oy, __m256 oz,
+                                    __m256 dx, __m256 dy, __m256 dz,
+                                    <span class="type">float</span> cx, <span class="type">float</span> cy, <span class="type">float</span> cz, <span class="type">float</span> r) {
+    __m256 scx = _mm256_set1_ps(cx);
+    __m256 scy = _mm256_set1_ps(cy);
+    __m256 scz = _mm256_set1_ps(cz);
+    __m256 sr = _mm256_set1_ps(r);
+
+    __m256 ocx = _mm256_sub_ps(ox, scx);
+    __m256 ocy = _mm256_sub_ps(oy, scy);
+    __m256 ocz = _mm256_sub_ps(oz, scz);
+
+    __m256 a = dot_simd(dx, dy, dz, dx, dy, dz);
+    __m256 b = _mm256_mul_ps(_mm256_set1_ps(2.0f),
+                             dot_simd(ocx, ocy, ocz, dx, dy, dz));
+    __m256 c = _mm256_sub_ps(dot_simd(ocx, ocy, ocz, ocx, ocy, ocz),
+                             _mm256_mul_ps(sr, sr));
+
+    __m256 disc = _mm256_sub_ps(_mm256_mul_ps(b, b),
+                    _mm256_mul_ps(_mm256_set1_ps(4.0f), _mm256_mul_ps(a, c)));
+
+    __m256 miss_mask = _mm256_cmp_ps(disc, _mm256_setzero_ps(), _CMP_LT_OQ);
+    __m256 sqrt_disc = _mm256_sqrt_ps(disc);
+    __m256 t = _mm256_div_ps(
+        _mm256_sub_ps(_mm256_sub_ps(_mm256_setzero_ps(), b), sqrt_disc),
+        _mm256_mul_ps(_mm256_set1_ps(2.0f), a));
+
+    <span class="keyword">return</span> _mm256_blendv_ps(t, _mm256_set1_ps(-1.0f), miss_mask);
+}</pre>
+      </div>
+      <h3>Rake</h3>
+      <div class="code-block">
+<pre><span class="comment">~~ Same algorithm, same performance, readable code</span>
+<span class="keyword">rake</span> <span class="fn">intersect_flat</span>
+  ray_ox ray_oy ray_oz ray_dx ray_dy ray_dz
+  <span class="scalar">&lt;sphere_cx&gt;</span> <span class="scalar">&lt;sphere_cy&gt;</span> <span class="scalar">&lt;sphere_cz&gt;</span> <span class="scalar">&lt;sphere_r&gt;</span>
+  <span class="op">-&gt;</span> t_result<span class="op">:</span>
+
+  <span class="keyword">let</span> ocx <span class="op">=</span> ray_ox <span class="op">-</span> <span class="scalar">&lt;sphere_cx&gt;</span>
+  <span class="keyword">let</span> ocy <span class="op">=</span> ray_oy <span class="op">-</span> <span class="scalar">&lt;sphere_cy&gt;</span>
+  <span class="keyword">let</span> ocz <span class="op">=</span> ray_oz <span class="op">-</span> <span class="scalar">&lt;sphere_cz&gt;</span>
+
+  <span class="keyword">let</span> a <span class="op">=</span> dot(ray_dx, ray_dy, ray_dz, ray_dx, ray_dy, ray_dz)
+  <span class="keyword">let</span> b <span class="op">=</span> <span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> dot(ocx, ocy, ocz, ray_dx, ray_dy, ray_dz)
+  <span class="keyword">let</span> c <span class="op">=</span> dot(ocx, ocy, ocz, ocx, ocy, ocz) <span class="op">-</span> <span class="scalar">&lt;sphere_r&gt;</span> <span class="op">*</span> <span class="scalar">&lt;sphere_r&gt;</span>
+
+  <span class="keyword">let</span> disc <span class="op">=</span> b <span class="op">*</span> b <span class="op">-</span> <span class="scalar">&lt;4.0&gt;</span> <span class="op">*</span> a <span class="op">*</span> c
+
+  <span class="op">|</span> <span class="tine">#miss</span>  <span class="op">:=</span> (disc <span class="op">&lt;</span> <span class="scalar">&lt;0.0&gt;</span>)
+  <span class="op">|</span> <span class="tine">#maybe</span> <span class="op">:=</span> (<span class="op">!</span><span class="tine">#miss</span>)
+
+  <span class="keyword">through</span> <span class="tine">#maybe</span><span class="op">:</span>
+    (neg(b) <span class="op">-</span> sqrt(disc)) <span class="op">/</span> (<span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> a)
+  <span class="op">-&gt;</span> t_value
+
+  <span class="keyword">through</span> <span class="tine">#miss</span><span class="op">:</span>  <span class="scalar">&lt; -1.0&gt;</span>  <span class="op">-&gt;</span> miss_result
+
+  <span class="keyword">sweep</span><span class="op">:</span>
+    <span class="op">|</span> <span class="tine">#miss</span>  <span class="op">-&gt;</span> miss_result
+    <span class="op">|</span> <span class="tine">#maybe</span> <span class="op">-&gt;</span> t_value
+  <span class="op">-&gt;</span> t_result</pre>
+      </div>
+    </section>
+
+    <section>
+      <h2>Generated Code</h2>
+      <p>
+        Rake compiles to MLIR, then to LLVM IR, then to native code. Here's what the compiler generates:
+      </p>
+      <h3>MLIR (Vector Dialect)</h3>
+      <div class="code-block">
+<pre><span class="comment">// Dot product: fully inlined vector ops</span>
+func.func @dot(%arg0: <span class="type">vector&lt;8xf32&gt;</span>, %arg1: <span class="type">vector&lt;8xf32&gt;</span>, ...) <span class="op">-&gt;</span> <span class="type">vector&lt;8xf32&gt;</span> {
+  %v0 = arith.mulf %arg0, %arg3 : <span class="type">vector&lt;8xf32&gt;</span>
+  %v1 = arith.mulf %arg1, %arg4 : <span class="type">vector&lt;8xf32&gt;</span>
+  %v2 = arith.addf %v0, %v1 : <span class="type">vector&lt;8xf32&gt;</span>
+  %v3 = arith.mulf %arg2, %arg5 : <span class="type">vector&lt;8xf32&gt;</span>
+  %v4 = arith.addf %v2, %v3 : <span class="type">vector&lt;8xf32&gt;</span>
+  func.return %v4 : <span class="type">vector&lt;8xf32&gt;</span>
+}
+
+<span class="comment">// Tine mask: vectorized comparison</span>
+%cmp25 = arith.cmpf olt, %disc, %zero : <span class="type">vector&lt;8xf32&gt;</span>
+<span class="comment">// Tine #miss = %cmp25</span>
+
+<span class="comment">// Through block: masked sqrt</span>
+%sqrt_disc = math.sqrt %disc : <span class="type">vector&lt;8xf32&gt;</span>
+%masked = arith.select %not_miss, %t, %zero : <span class="type">vector&lt;8xi1&gt;</span>, <span class="type">vector&lt;8xf32&gt;</span>
+
+<span class="comment">// Sweep: blend results with select chain</span>
+%sel0 = arith.select %maybe_mask, %t_value, %undef : <span class="type">vector&lt;8xi1&gt;</span>, <span class="type">vector&lt;8xf32&gt;</span>
+%sel1 = arith.select %miss_mask, %miss_result, %sel0 : <span class="type">vector&lt;8xi1&gt;</span>, <span class="type">vector&lt;8xf32&gt;</span></pre>
+      </div>
+      <p>
+        The MLIR uses native vector types (<code>vector&lt;8xf32&gt;</code>) and standard arithmetic operations.
+        This lowers directly to AVX2 instructions via LLVM.
       </p>
     </section>
 
