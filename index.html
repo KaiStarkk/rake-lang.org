@@ -227,7 +227,7 @@
         </svg>
       </div>
       <h1>Rake</h1>
-      <p class="tagline">A vector-first language for CPU SIMD with divergent control flow.</p>
+      <p class="tagline">A vector-first language for SIMD and SPIR-V with divergent control flow.</p>
       <nav>
         <a href="https://github.com/KaiStarkk/rake-lang">GitHub</a>
         <a href="https://github.com/KaiStarkk/rake-lang#installation">Install</a>
@@ -442,6 +442,10 @@
     <section>
       <h2>Status</h2>
       <p>
+        SAFE HARBOUR: Rake is still very much in research and development. What you see here is essentially
+        the entire content of the lexer / parser. Testing is currently through an FFI harness while I work
+        on finalizing the specification and competing feature sets to enable Rake to support application 
+        programs, as opposed to just CPU kernels.
         Rake 0.2.0 is an alpha release. The compiler pipeline works:
         <code>.rk</code> &rarr; Parser &rarr; Type Checker &rarr; MLIR &rarr; LLVM IR &rarr; Native Code.
       </p>
