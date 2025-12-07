@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rake - Vector-first SIMD Programming</title>
-  <meta name="description" content="A programming language that makes SIMD vectors and SPIR-V explicit. Write clean code, get full vector performance.">
+  <meta name="description" content="A programming language where vectors are primitive. Write clean code, get full SIMD performance.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -22,6 +22,7 @@
       --tine: #f0c8a0;
       --scalar: #98d0b8;
       --comment: #908070;
+      --warn: #d4a054;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -35,35 +36,51 @@
       margin: 0 auto;
       padding: 0 24px;
     }
-    header {
-      padding: 60px 0 40px;
-      border-bottom: 1px solid rgba(224, 192, 144, 0.15);
+
+    .hero {
+      position: relative;
+      padding: 0;
+      margin-bottom: 48px;
     }
-    .logo {
-      margin-bottom: 16px;
-    }
-    .logo svg {
+    .hero-image {
+      width: 100%;
+      max-width: 400px;
       display: block;
+      margin: 0 auto;
     }
-    h1 {
-      font-size: 2.5rem;
+    .hero-content {
+      text-align: center;
+      padding: 32px 0;
+    }
+    .hero h1 {
+      font-size: 2rem;
       font-weight: 700;
       letter-spacing: -0.02em;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       color: var(--sand);
     }
     .tagline {
       font-size: 1.125rem;
       color: var(--text-dim);
-      max-width: 600px;
+    }
+    .alpha-badge {
+      display: inline-block;
+      background: rgba(200, 96, 64, 0.2);
+      color: var(--rust);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-left: 12px;
+      vertical-align: middle;
     }
     nav {
-      margin-top: 24px;
+      margin-top: 20px;
     }
     nav a {
       color: var(--text-dim);
       text-decoration: none;
-      margin-right: 24px;
+      margin: 0 12px;
       font-size: 0.9rem;
     }
     nav a:hover {
@@ -96,6 +113,16 @@
     p:last-child {
       margin-bottom: 0;
     }
+    strong {
+      color: var(--text);
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875em;
+      background: var(--bg-code);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
 
     .code-block {
       background: var(--bg-code);
@@ -118,65 +145,69 @@
     .fn { color: var(--sand-light); }
     .type { color: var(--rust); }
 
-    .intro {
-      padding: 48px 0;
-    }
-    .intro p {
-      font-size: 1.0625rem;
-      color: var(--text);
-      max-width: 650px;
-    }
-
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin: 24px 0;
-    }
-    .feature {
-      background: var(--bg-alt);
-      padding: 20px;
+    .warning {
+      background: rgba(212, 160, 84, 0.1);
+      border: 1px solid rgba(212, 160, 84, 0.3);
       border-radius: 8px;
-      border: 1px solid rgba(212, 165, 116, 0.1);
-    }
-    .feature h4 {
-      color: var(--sand);
+      padding: 16px 20px;
+      margin: 20px 0;
       font-size: 0.9rem;
-      margin-bottom: 8px;
     }
-    .feature p {
-      font-size: 0.875rem;
-      color: var(--text-dim);
-      margin: 0;
+    .warning strong {
+      color: var(--warn);
     }
 
-    .benchmark {
-      background: var(--bg-alt);
-      border-radius: 8px;
-      padding: 24px;
-      margin: 24px 0;
-      border: 1px solid rgba(212, 165, 116, 0.1);
+    .principles-list {
+      list-style: none;
+      padding: 0;
     }
-    .benchmark-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(212, 165, 116, 0.1);
+    .principles-list li {
+      padding: 8px 0;
+      color: var(--text-dim);
+      border-bottom: 1px solid rgba(212, 165, 116, 0.05);
     }
-    .benchmark-row:last-child {
+    .principles-list li:last-child {
       border-bottom: none;
     }
-    .benchmark-label {
-      color: var(--text-dim);
-      font-size: 0.875rem;
-    }
-    .benchmark-value {
-      font-weight: 600;
-      font-size: 1.125rem;
-    }
-    .benchmark-value.highlight {
+    .principles-list strong {
       color: var(--sand);
+    }
+
+    .ascii-diagram {
+      background: var(--bg-code);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      overflow-x: auto;
+      border: 1px solid rgba(212, 165, 116, 0.1);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: var(--text-dim);
+      white-space: pre;
+    }
+
+    .vocab-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 0.9rem;
+    }
+    .vocab-table th {
+      text-align: left;
+      padding: 12px 16px;
+      background: var(--bg-alt);
+      color: var(--sand);
+      font-weight: 500;
+    }
+    .vocab-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(212, 165, 116, 0.1);
+      color: var(--text-dim);
+    }
+    .vocab-table td:first-child {
+      color: var(--sand-light);
+      font-family: 'JetBrains Mono', monospace;
     }
 
     .install {
@@ -208,7 +239,7 @@
     }
 
     @media (max-width: 640px) {
-      h1 { font-size: 2rem; }
+      .hero h1 { font-size: 1.75rem; }
       .tagline { font-size: 1rem; }
       nav a { display: block; margin: 8px 0; }
     }
@@ -216,294 +247,132 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <div class="logo">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <rect x="4" y="8" width="40" height="6" rx="1" fill="var(--sand)"/>
-          <rect x="8" y="14" width="4" height="20" rx="1" fill="var(--sand)"/>
-          <rect x="16" y="14" width="4" height="20" rx="1" fill="var(--sand)"/>
-          <rect x="24" y="14" width="4" height="20" rx="1" fill="var(--sand)"/>
-          <rect x="32" y="14" width="4" height="20" rx="1" fill="var(--sand)"/>
-        </svg>
+    <div class="hero">
+      <img src="wallpaper.png" alt="Rake" class="hero-image">
+      <div class="hero-content">
+        <h1>Rake <span class="alpha-badge">ALPHA</span></h1>
+        <p class="tagline">A vector-first language for CPU SIMD</p>
+        <nav>
+          <a href="#principles">Principles</a>
+          <a href="#syntax">Syntax</a>
+          <a href="https://github.com/KaiStarkk/rake-lang">GitHub</a>
+        </nav>
       </div>
-      <h1>Rake</h1>
-      <p class="tagline">A vector-first language for SIMD and SPIR-V with divergent control flow.</p>
-      <nav>
-        <a href="https://github.com/KaiStarkk/rake-lang">GitHub</a>
-        <a href="https://github.com/KaiStarkk/rake-lang#installation">Install</a>
-        <a href="https://github.com/KaiStarkk/rake-lang/tree/main/docs">Docs</a>
-      </nav>
-    </header>
-
-    <div class="intro">
-      <p>
-        Rake makes SIMD programming explicit. Instead of hoping the compiler auto-vectorizes your loops,
-        you write code where every value is inherently vectorized. The result: clean, readable code
-        that compiles to optimal SIMD instructions.
-      </p>
     </div>
 
-    <section>
-      <h2>Racks: Native Vector Types</h2>
-      <p>
-        In Rake, a <strong>rack</strong> is a vector of values across SIMD lanes. When you write
-        <code>float rack</code>, you get 8 floats (AVX) or 16 (AVX-512) that operate in parallel.
-      </p>
-      <div class="code-block">
-<pre><span class="comment">~~ A rack holds one value per SIMD lane</span>
-<span class="keyword">let</span> positions <span class="op">:</span> <span class="type">float rack</span> <span class="op">=</span> load_positions()
-<span class="keyword">let</span> velocities <span class="op">:</span> <span class="type">float rack</span> <span class="op">=</span> load_velocities()
+    <div class="warning">
+      <strong>Early development.</strong> Rake is a research language. Syntax and semantics
+      are still evolving. The examples below represent the current implementation.
+    </div>
 
-<span class="comment">~~ Arithmetic operates on all lanes simultaneously</span>
-<span class="keyword">let</span> new_positions <span class="op">=</span> positions <span class="op">+</span> velocities <span class="op">*</span> dt</pre>
-      </div>
+    <section id="principles">
+      <h2>Principles</h2>
+      <p>
+        Rake is named for its execution model: <strong>data rakes through tine patterns</strong>.
+      </p>
+      <div class="ascii-diagram">            ↓  ↓  ↓  ↓  ↓  ↓  ↓  ↓   (8 lanes of data enter)
+════════════════════════════════════
+|  tine A |███░░░███░░░███░░░██████| (some lanes blocked)
+════════════════════════════════════
+               ↓     ↓     ↓         (survivors continue)
+═══════════════════════════════════
+|  tine B |░░░███░░░░░░███░░░░░░███| (different pattern)
+═══════════════════════════════════
+                     ↓     ↓         (fewer survivors)
+    sweep:           &lt;     &lt;         (collect results)</div>
+      <p>
+        Each <strong>tine</strong> is a horizontal barrier—the teeth of a rake—that filters lanes.
+        Data flows downward through tine declarations. Results are swept up at the end.
+      </p>
+
+      <h3>Core Thesis</h3>
+      <p>
+        Auto-vectorization fails on divergent code. Traditional <code>if/else</code> branches
+        cannot map efficiently to SIMD because different lanes need different code paths.
+        Rake inverts the model:
+      </p>
+      <ul class="principles-list">
+        <li><strong>Tines declare masks</strong> — boolean vectors defining which lanes are active</li>
+        <li><strong>Through blocks execute under masks</strong> — all lanes compute, mask selects results</li>
+        <li><strong>Sweep collects results</strong> — lanes merge based on which tines they passed</li>
+      </ul>
+      <p>This is SIMD semantics made explicit in the language.</p>
+
+      <h3>Design Principles</h3>
+      <ul class="principles-list">
+        <li><strong>Vectors are primitive</strong> — A rack is one SIMD register, not an array</li>
+        <li><strong>Scalars are marked</strong> — <code>&lt;name&gt;</code> broadcasts, preventing accidental confusion</li>
+        <li><strong>Control flow is predication</strong> — No branches; tines create masks, through applies them</li>
+        <li><strong>Data layout is explicit</strong> — <code>stack</code> (SoA) vs <code>single</code> (scalars) is visible</li>
+        <li><strong>Vocabulary matches semantics</strong> — tine, rake, through, sweep reinforce parallel thinking</li>
+      </ul>
+
+      <h3>Vocabulary</h3>
+      <table class="vocab-table">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>rack</td><td>Vector value (one per SIMD lane)</td></tr>
+        <tr><td>tine</td><td>Named mask declaration</td></tr>
+        <tr><td>through</td><td>Masked computation region</td></tr>
+        <tr><td>sweep</td><td>Collect results from tines</td></tr>
+        <tr><td>crunch</td><td>Pure function (all lanes same logic)</td></tr>
+        <tr><td>rake</td><td>Divergent function (lanes may differ)</td></tr>
+        <tr><td>stack</td><td>Structure-of-Arrays type</td></tr>
+        <tr><td>single</td><td>All-scalar configuration struct</td></tr>
+        <tr><td>pack</td><td>Collection of stack chunks</td></tr>
+        <tr><td>over</td><td>Iterate over pack in SIMD-width chunks</td></tr>
+      </table>
     </section>
 
-    <section>
-      <h2>Scalars: Broadcast Values</h2>
+    <section id="syntax">
+      <h2>Syntax</h2>
+
+      <h3>Racks</h3>
       <p>
-        <strong>Scalars</strong> are uniform values broadcast to all lanes. The angle bracket
-        syntax <code>&lt;dt&gt;</code> makes it visually clear which values are scalars vs racks.
+        A <strong>rack</strong> is a vector of values—one per SIMD lane. Arithmetic is lane-wise.
+        <strong>Scalars</strong> use angle brackets to broadcast.
       </p>
       <div class="code-block">
-<pre><span class="comment">~~ Scalars use angle brackets</span>
-<span class="keyword">let</span> result <span class="op">=</span> positions <span class="op">+</span> <span class="scalar">&lt;gravity&gt;</span> <span class="op">*</span> <span class="scalar">&lt;dt&gt;</span>
-
-<span class="comment">~~ Field access works too</span>
-<span class="keyword">let</span> radius <span class="op">=</span> <span class="scalar">&lt;sphere.r&gt;</span>
-
-<span class="comment">~~ Negative literals need a space: &lt; -1.0&gt;</span>
-<span class="keyword">let</span> miss_t <span class="op">=</span> <span class="scalar">&lt; -1.0&gt;</span></pre>
+<pre><span class="keyword">let</span> positions <span class="op">:</span> <span class="type">float rack</span> <span class="op">=</span> load_positions()
+<span class="keyword">let</span> new_pos <span class="op">=</span> positions <span class="op">+</span> velocities <span class="op">*</span> <span class="scalar">&lt;dt&gt;</span></pre>
       </div>
-    </section>
 
-    <section>
-      <h2>Stacks: Structure of Arrays</h2>
+      <h3>Stacks</h3>
       <p>
-        A <strong>stack</strong> is a struct laid out in SoA (Structure of Arrays) format.
-        Each field is a rack, giving cache-friendly memory access patterns.
+        A <strong>stack</strong> is a struct in Structure-of-Arrays format. Each field is a rack.
       </p>
       <div class="code-block">
-<pre><span class="comment">~~ Define a stack type</span>
-<span class="keyword">stack</span> <span class="type">Particle</span> {
-  x <span class="op">:</span> <span class="type">float rack</span>,
-  y <span class="op">:</span> <span class="type">float rack</span>,
-  z <span class="op">:</span> <span class="type">float rack</span>,
-  vx <span class="op">:</span> <span class="type">float rack</span>,
-  vy <span class="op">:</span> <span class="type">float rack</span>,
-  vz <span class="op">:</span> <span class="type">float rack</span>
-}
-
-<span class="comment">~~ Access fields naturally</span>
-<span class="keyword">let</span> speed <span class="op">=</span> sqrt(p.vx<span class="op">*</span>p.vx <span class="op">+</span> p.vy<span class="op">*</span>p.vy <span class="op">+</span> p.vz<span class="op">*</span>p.vz)</pre>
-      </div>
-    </section>
-
-    <section>
-      <h2>Crunch: Pure SIMD Computation</h2>
-      <p>
-        A <strong>crunch</strong> is a pure function that operates on racks. Crunches are always
-        inlined, producing zero function call overhead in the generated code.
-      </p>
-      <div class="code-block">
-<pre><span class="comment">~~ A crunch computes dot product across lanes</span>
-<span class="keyword">crunch</span> <span class="fn">dot</span> ax ay az bx by bz <span class="op">-&gt;</span> d<span class="op">:</span>
-  d <span class="op">&lt;-</span> ax<span class="op">*</span>bx <span class="op">+</span> ay<span class="op">*</span>by <span class="op">+</span> az<span class="op">*</span>bz
-
-<span class="comment">~~ Zero overhead when called</span>
-<span class="keyword">let</span> dist_sq <span class="op">=</span> dot(dx, dy, dz, dx, dy, dz)</pre>
-      </div>
-    </section>
-
-    <section>
-      <h2>Tines: Named Lane Masks</h2>
-      <p>
-        When different SIMD lanes need different behavior, you define <strong>tines</strong>.
-        A tine is a named boolean mask that partitions lanes based on a predicate.
-      </p>
-      <div class="code-block">
-<pre><span class="comment">~~ Tines use # prefix (like grid lines / SIMD lanes)</span>
-<span class="op">|</span> <span class="tine">#miss</span>  <span class="op">:=</span> (disc <span class="op">&lt;</span> <span class="scalar">&lt;0.0&gt;</span>)
-<span class="op">|</span> <span class="tine">#hit</span>   <span class="op">:=</span> (<span class="op">!</span><span class="tine">#miss</span>)
-
-<span class="comment">~~ Tines can compose</span>
-<span class="op">|</span> <span class="tine">#close</span> <span class="op">:=</span> (<span class="tine">#hit</span> <span class="op">&amp;&amp;</span> t <span class="op">&lt;</span> <span class="scalar">&lt;max_dist&gt;</span>)</pre>
-      </div>
-    </section>
-
-    <section>
-      <h2>Through: Masked Computation</h2>
-      <p>
-        A <strong>through</strong> block executes computation only for lanes where the tine is true (i.e., where the rack passes <i>through</i> the tine).
-        Other lanes receive an identity value. No branches—just masked SIMD operations.
-      </p>
-      <div class="code-block">
-<pre><span class="comment">~~ Compute sqrt only for lanes where disc &gt;= 0</span>
-<span class="keyword">through</span> <span class="tine">#hit</span><span class="op">:</span>
-  <span class="keyword">let</span> sqrt_disc <span class="op">=</span> sqrt(disc)
-  <span class="keyword">let</span> t <span class="op">=</span> (<span class="op">-</span> b <span class="op">-</span> sqrt_disc) <span class="op">/</span> (<span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> a)
-  t
-<span class="op">-&gt;</span> t_value
-
-<span class="comment">~~ Miss lanes get -1</span>
-<span class="keyword">through</span> <span class="tine">#miss</span><span class="op">:</span>
-  <span class="scalar">&lt; -1.0&gt;</span>
-<span class="op">-&gt;</span> miss_value</pre>
-      </div>
-    </section>
-
-    <section>
-      <h2>Sweep: Collect Results</h2>
-      <p>
-        <strong>Sweep</strong> combines results from different tines using masked selection.
-        Each lane picks the result from whichever tine matched.
-      </p>
-      <div class="code-block">
-<pre><span class="keyword">sweep</span><span class="op">:</span>
-  <span class="op">|</span> <span class="tine">#miss</span> <span class="op">-&gt;</span> miss_value
-  <span class="op">|</span> <span class="tine">#hit</span>  <span class="op">-&gt;</span> t_value
-<span class="op">-&gt;</span> final_t</pre>
-      </div>
-    </section>
-
-    <section>
-      <h2>Rake: Putting It Together</h2>
-      <p>
-        A <strong>rake</strong> function combines tines, through blocks, and sweep for
-        complete divergent control flow. Here's ray-sphere intersection:
-      </p>
-      <div class="code-block">
-<pre><span class="keyword">rake</span> <span class="fn">intersect</span> ray_ox ray_oy ray_oz ray_dx ray_dy ray_dz
-  <span class="scalar">&lt;sphere_cx&gt;</span> <span class="scalar">&lt;sphere_cy&gt;</span> <span class="scalar">&lt;sphere_cz&gt;</span> <span class="scalar">&lt;sphere_r&gt;</span>
-  <span class="op">-&gt;</span> t_result<span class="op">:</span>
-
-  <span class="keyword">let</span> disc <span class="op">=</span> b <span class="op">*</span> b <span class="op">-</span> <span class="scalar">&lt;4.0&gt;</span> <span class="op">*</span> a <span class="op">*</span> c
-
-  <span class="op">|</span> <span class="tine">#miss</span> <span class="op">:=</span> (disc <span class="op">&lt;</span> <span class="scalar">&lt;0.0&gt;</span>)
-  <span class="op">|</span> <span class="tine">#hit</span>  <span class="op">:=</span> (<span class="op">!</span><span class="tine">#miss</span>)
-
-  <span class="keyword">through</span> <span class="tine">#hit</span><span class="op">:</span>
-    <span class="keyword">let</span> sqrt_disc <span class="op">=</span> sqrt(disc)
-    (<span class="op">-</span> b <span class="op">-</span> sqrt_disc) <span class="op">/</span> (<span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> a)
-  <span class="op">-&gt;</span> t_value
-
-  <span class="keyword">through</span> <span class="tine">#miss</span><span class="op">:</span>
-    <span class="scalar">&lt; -1.0&gt;</span>
-  <span class="op">-&gt;</span> miss_value
-
-  <span class="keyword">sweep</span><span class="op">:</span>
-    <span class="op">|</span> <span class="tine">#miss</span> <span class="op">-&gt;</span> miss_value
-    <span class="op">|</span> <span class="tine">#hit</span>  <span class="op">-&gt;</span> t_value
-  <span class="op">-&gt;</span> t_result</pre>
-      </div>
-    </section>
-
-    <section>
-      <h2>Over: Iterate Over Packs</h2>
-      <p>
-        A <strong>run</strong> function is an entry point that processes pack data.
-        The <strong>over</strong> loop iterates in SIMD-width chunks with automatic tail masking.
-      </p>
-      <div class="code-block">
-<pre><span class="comment">~~ Process all rays in a pack (automatic SIMD chunking)</span>
-<span class="keyword">run</span> <span class="fn">render_all</span> (rays <span class="op">:</span> <span class="type">Ray pack</span>) (<span class="scalar">&lt;count&gt;</span> <span class="op">:</span> <span class="type">int64</span>)
-               (<span class="scalar">&lt;sphere_cx&gt;</span> <span class="op">:</span> <span class="type">float</span>) (<span class="scalar">&lt;sphere_cy&gt;</span> <span class="op">:</span> <span class="type">float</span>)
-               (<span class="scalar">&lt;sphere_cz&gt;</span> <span class="op">:</span> <span class="type">float</span>) (<span class="scalar">&lt;sphere_r&gt;</span> <span class="op">:</span> <span class="type">float</span>)
-               <span class="op">-&gt;</span> result<span class="op">:</span>
-  <span class="keyword">over</span> rays, <span class="scalar">&lt;count&gt;</span> <span class="op">|&gt;</span> ray<span class="op">:</span>
-    <span class="keyword">let</span> t <span class="op">=</span> intersect_flat(ray.ox, ray.oy, ray.oz,
-                           ray.dx, ray.dy, ray.dz,
-                           <span class="scalar">&lt;sphere_cx&gt;</span>, <span class="scalar">&lt;sphere_cy&gt;</span>,
-                           <span class="scalar">&lt;sphere_cz&gt;</span>, <span class="scalar">&lt;sphere_r&gt;</span>)
-    t</pre>
-      </div>
-      <p>
-        <code>over</code> handles the loop over pack data, loading 8 elements at a time (AVX),
-        and generating masked stores for the final partial iteration.
-      </p>
-    </section>
-
-    <section>
-      <h2>Performance</h2>
-      <p>
-        Raytracer benchmark (1920×1080, 10 spheres, 100 iterations):
-      </p>
-      <div class="benchmark">
-        <div class="benchmark-row">
-          <span class="benchmark-label">C Scalar</span>
-          <span class="benchmark-value">60.90 ms (16.4 FPS)</span>
-        </div>
-        <div class="benchmark-row">
-          <span class="benchmark-label">C SIMD (hand-written AVX2 intrinsics)</span>
-          <span class="benchmark-value">29.82 ms &mdash; 2.04× faster</span>
-        </div>
-        <div class="benchmark-row">
-          <span class="benchmark-label">Rake SIMD</span>
-          <span class="benchmark-value highlight">29.85 ms &mdash; 2.04× faster</span>
-        </div>
-      </div>
-      <p>
-        <strong>Rake matches hand-written AVX2 intrinsics</strong>&mdash;with clean, readable syntax.
-        Anti-hype disclaimer: this is not magic. It's the power of exclusively targeting
-        vector and GPU dialects of MLIR from day one. The backend engineers and architecture
-        designers are the experts; Rake just provides an ergonomic frontend which is much easier
-        to do when you're not trying to embed it inside the grammar of an entirely different paradigm.
-      </p>
-    </section>
-
-    <section>
-      <h2>Rake vs. C Intrinsics</h2>
-      <p>
-        Ray-sphere intersection: same algorithm, same performance, different readability.
-      </p>
-      <h3>C with AVX2 Intrinsics</h3>
-      <div class="code-block">
-<pre><span class="comment">// 30 lines of intrinsics nobody wants to debug</span>
-<span class="keyword">static inline</span> __m256 intersect_simd(__m256 ox, __m256 oy, __m256 oz,
-                                    __m256 dx, __m256 dy, __m256 dz,
-                                    <span class="type">float</span> cx, <span class="type">float</span> cy, <span class="type">float</span> cz, <span class="type">float</span> r) {
-    __m256 scx = _mm256_set1_ps(cx);
-    __m256 scy = _mm256_set1_ps(cy);
-    __m256 scz = _mm256_set1_ps(cz);
-    __m256 sr = _mm256_set1_ps(r);
-
-    __m256 ocx = _mm256_sub_ps(ox, scx);
-    __m256 ocy = _mm256_sub_ps(oy, scy);
-    __m256 ocz = _mm256_sub_ps(oz, scz);
-
-    __m256 a = dot_simd(dx, dy, dz, dx, dy, dz);
-    __m256 b = _mm256_mul_ps(_mm256_set1_ps(2.0f),
-                             dot_simd(ocx, ocy, ocz, dx, dy, dz));
-    __m256 c = _mm256_sub_ps(dot_simd(ocx, ocy, ocz, ocx, ocy, ocz),
-                             _mm256_mul_ps(sr, sr));
-
-    __m256 disc = _mm256_sub_ps(_mm256_mul_ps(b, b),
-                    _mm256_mul_ps(_mm256_set1_ps(4.0f), _mm256_mul_ps(a, c)));
-
-    __m256 miss_mask = _mm256_cmp_ps(disc, _mm256_setzero_ps(), _CMP_LT_OQ);
-    __m256 sqrt_disc = _mm256_sqrt_ps(disc);
-    __m256 t = _mm256_div_ps(
-        _mm256_sub_ps(_mm256_sub_ps(_mm256_setzero_ps(), b), sqrt_disc),
-        _mm256_mul_ps(_mm256_set1_ps(2.0f), a));
-
-    <span class="keyword">return</span> _mm256_blendv_ps(t, _mm256_set1_ps(-1.0f), miss_mask);
+<pre><span class="keyword">stack</span> <span class="type">Ray</span> {
+  ox<span class="op">:</span> <span class="type">float rack</span>, oy<span class="op">:</span> <span class="type">float rack</span>, oz<span class="op">:</span> <span class="type">float rack</span>,
+  dx<span class="op">:</span> <span class="type">float rack</span>, dy<span class="op">:</span> <span class="type">float rack</span>, dz<span class="op">:</span> <span class="type">float rack</span>
 }</pre>
       </div>
-      <h3>Rake</h3>
+
+      <h3>Crunches</h3>
+      <p>
+        A <strong>crunch</strong> is a pure function where all lanes execute identical logic. Always inlined.
+      </p>
       <div class="code-block">
-<pre><span class="comment">~~ Same algorithm, same performance, readable code</span>
-<span class="keyword">rake</span> <span class="fn">intersect_flat</span>
-  ray_ox ray_oy ray_oz ray_dx ray_dy ray_dz
-  <span class="scalar">&lt;sphere_cx&gt;</span> <span class="scalar">&lt;sphere_cy&gt;</span> <span class="scalar">&lt;sphere_cz&gt;</span> <span class="scalar">&lt;sphere_r&gt;</span>
-  <span class="op">-&gt;</span> t_result<span class="op">:</span>
+<pre><span class="keyword">crunch</span> <span class="fn">dot</span> (ax, ay, az, bx, by, bz) <span class="op">-&gt;</span> d<span class="op">:</span>
+  <span class="keyword">let</span> d <span class="op">=</span> ax<span class="op">*</span>bx <span class="op">+</span> ay<span class="op">*</span>by <span class="op">+</span> az<span class="op">*</span>bz
+  d</pre>
+      </div>
 
-  <span class="keyword">let</span> ocx <span class="op">=</span> ray_ox <span class="op">-</span> <span class="scalar">&lt;sphere_cx&gt;</span>
-  <span class="keyword">let</span> ocy <span class="op">=</span> ray_oy <span class="op">-</span> <span class="scalar">&lt;sphere_cy&gt;</span>
-  <span class="keyword">let</span> ocz <span class="op">=</span> ray_oz <span class="op">-</span> <span class="scalar">&lt;sphere_cz&gt;</span>
+      <h3>Tines</h3>
+      <p>
+        <strong>Tines</strong> are named boolean masks that partition lanes. The <code>#</code> prefix evokes grid lines.
+      </p>
+      <div class="code-block">
+<pre><span class="op">|</span> <span class="tine">#miss</span>  <span class="op">:=</span> (disc <span class="op">&lt;</span> <span class="scalar">&lt;0.0&gt;</span>)
+<span class="op">|</span> <span class="tine">#maybe</span> <span class="op">:=</span> (<span class="op">!</span><span class="tine">#miss</span>)</pre>
+      </div>
 
-  <span class="keyword">let</span> a <span class="op">=</span> dot(ray_dx, ray_dy, ray_dz, ray_dx, ray_dy, ray_dz)
-  <span class="keyword">let</span> b <span class="op">=</span> <span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> dot(ocx, ocy, ocz, ray_dx, ray_dy, ray_dz)
-  <span class="keyword">let</span> c <span class="op">=</span> dot(ocx, ocy, ocz, ocx, ocy, ocz) <span class="op">-</span> <span class="scalar">&lt;sphere_r&gt;</span> <span class="op">*</span> <span class="scalar">&lt;sphere_r&gt;</span>
+      <h3>Rakes</h3>
+      <p>
+        A <strong>rake</strong> function handles divergent control flow with tines, <strong>through</strong> blocks, and <strong>sweep</strong>.
+      </p>
+      <div class="code-block">
+<pre><span class="keyword">rake</span> <span class="fn">intersect</span> (ray_ox, ray_oy, ray_oz, ray_dx, ray_dy, ray_dz,
+               <span class="scalar">&lt;sphere_cx&gt;</span>, <span class="scalar">&lt;sphere_cy&gt;</span>, <span class="scalar">&lt;sphere_cz&gt;</span>, <span class="scalar">&lt;sphere_r&gt;</span>) <span class="op">-&gt;</span> t_result<span class="op">:</span>
 
   <span class="keyword">let</span> disc <span class="op">=</span> b <span class="op">*</span> b <span class="op">-</span> <span class="scalar">&lt;4.0&gt;</span> <span class="op">*</span> a <span class="op">*</span> c
 
@@ -511,95 +380,50 @@
   <span class="op">|</span> <span class="tine">#maybe</span> <span class="op">:=</span> (<span class="op">!</span><span class="tine">#miss</span>)
 
   <span class="keyword">through</span> <span class="tine">#maybe</span><span class="op">:</span>
-    (neg(b) <span class="op">-</span> sqrt(disc)) <span class="op">/</span> (<span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> a)
+    <span class="keyword">let</span> sqrt_disc <span class="op">=</span> sqrt(disc)
+    <span class="keyword">let</span> t <span class="op">=</span> (<span class="op">-</span> b <span class="op">-</span> sqrt_disc) <span class="op">/</span> (<span class="scalar">&lt;2.0&gt;</span> <span class="op">*</span> a)
+    t
   <span class="op">-&gt;</span> t_value
 
-  <span class="keyword">through</span> <span class="tine">#miss</span><span class="op">:</span>  <span class="scalar">&lt; -1.0&gt;</span>  <span class="op">-&gt;</span> miss_result
+  <span class="keyword">through</span> <span class="tine">#miss</span><span class="op">:</span>
+    <span class="scalar">&lt; -1.0&gt;</span>
+  <span class="op">-&gt;</span> miss_result
 
   <span class="keyword">sweep</span><span class="op">:</span>
     <span class="op">|</span> <span class="tine">#miss</span>  <span class="op">-&gt;</span> miss_result
     <span class="op">|</span> <span class="tine">#maybe</span> <span class="op">-&gt;</span> t_value
   <span class="op">-&gt;</span> t_result</pre>
       </div>
-    </section>
 
-    <section>
-      <h2>Generated Code</h2>
-      <p>
-        Rake compiles to MLIR, then to LLVM IR, then to native code. Here's what the compiler generates:
-      </p>
-      <h3>MLIR (Vector Dialect)</h3>
-      <div class="code-block">
-<pre><span class="comment">// Dot product: fully inlined vector ops</span>
-func.func @dot(%arg0: <span class="type">vector&lt;8xf32&gt;</span>, %arg1: <span class="type">vector&lt;8xf32&gt;</span>, ...) <span class="op">-&gt;</span> <span class="type">vector&lt;8xf32&gt;</span> {
-  %v0 = arith.mulf %arg0, %arg3 : <span class="type">vector&lt;8xf32&gt;</span>
-  %v1 = arith.mulf %arg1, %arg4 : <span class="type">vector&lt;8xf32&gt;</span>
-  %v2 = arith.addf %v0, %v1 : <span class="type">vector&lt;8xf32&gt;</span>
-  %v3 = arith.mulf %arg2, %arg5 : <span class="type">vector&lt;8xf32&gt;</span>
-  %v4 = arith.addf %v2, %v3 : <span class="type">vector&lt;8xf32&gt;</span>
-  func.return %v4 : <span class="type">vector&lt;8xf32&gt;</span>
-}
-
-<span class="comment">// Tine mask: vectorized comparison</span>
-%cmp25 = arith.cmpf olt, %disc, %zero : <span class="type">vector&lt;8xf32&gt;</span>
-<span class="comment">// Tine #miss = %cmp25</span>
-
-<span class="comment">// Through block: masked sqrt</span>
-%sqrt_disc = math.sqrt %disc : <span class="type">vector&lt;8xf32&gt;</span>
-%masked = arith.select %not_miss, %t, %zero : <span class="type">vector&lt;8xi1&gt;</span>, <span class="type">vector&lt;8xf32&gt;</span>
-
-<span class="comment">// Sweep: blend results with select chain</span>
-%sel0 = arith.select %maybe_mask, %t_value, %undef : <span class="type">vector&lt;8xi1&gt;</span>, <span class="type">vector&lt;8xf32&gt;</span>
-%sel1 = arith.select %miss_mask, %miss_result, %sel0 : <span class="type">vector&lt;8xi1&gt;</span>, <span class="type">vector&lt;8xf32&gt;</span></pre>
+      <h3>Packs &amp; Over</h3>
+      <div class="warning">
+        <strong>Experimental.</strong> The <code>over</code> construct is still in flux.
       </div>
       <p>
-        The MLIR uses native vector types (<code>vector&lt;8xf32&gt;</code>) and standard arithmetic operations.
-        This lowers directly to AVX2 instructions via LLVM.
+        A <strong>pack</strong> is a collection of stack data. <strong>over</strong> iterates in SIMD-width chunks.
       </p>
+      <div class="code-block">
+<pre><span class="keyword">run</span> <span class="fn">render_all</span> (rays <span class="op">:</span> <span class="type">Ray pack</span>, <span class="scalar">&lt;count&gt;</span> <span class="op">:</span> <span class="type">int64</span>) <span class="op">-&gt;</span> result<span class="op">:</span>
+  <span class="keyword">over</span> rays, <span class="scalar">&lt;count&gt;</span> <span class="op">|&gt;</span> ray<span class="op">:</span>
+    <span class="keyword">let</span> t <span class="op">=</span> intersect(ray.ox, ray.oy, ray.oz, ray.dx, ray.dy, ray.dz, ...)
+    t</pre>
+      </div>
     </section>
 
     <section>
       <h2>Install</h2>
-      <p>Prerequisites: OCaml 5.0+ with dune, LLVM 17+ (mlir-opt, mlir-translate, llc)</p>
+      <p>Prerequisites: OCaml 5.0+ with dune, LLVM/MLIR 17+</p>
       <div class="install">
         <span class="prompt">$</span> git clone https://github.com/KaiStarkk/rake-lang<br>
         <span class="prompt">$</span> cd rake-lang && dune build<br>
-        <span class="prompt">$</span> ./scripts/compile.sh examples/intersect_flat.rk
-      </div>
-      <p>VS Code extension for syntax highlighting:</p>
-      <div class="install">
-        <span class="prompt">$</span> code --install-extension rake-lang-0.2.0.vsix
-      </div>
-    </section>
-
-    <section>
-      <h2>Status</h2>
-      <p>
-        SAFE HARBOUR: Rake is still very much in research and development. What you see here is essentially
-        the entire content of the lexer / parser. Testing is currently through an FFI harness while I work
-        on finalizing the specification and competing feature sets to enable Rake to support application 
-        programs, as opposed to just CPU kernels.
-        Rake 0.2.0 is an alpha release. The compiler pipeline works:
-        <code>.rk</code> &rarr; Parser &rarr; Type Checker &rarr; MLIR &rarr; LLVM IR &rarr; Native Code.
-      </p>
-      <div class="feature-grid">
-        <div class="feature">
-          <h4>Working</h4>
-          <p>Parsing, type inference, MLIR codegen, AVX2 output</p>
-        </div>
-        <div class="feature">
-          <h4>Planned</h4>
-          <p>AVX-512, standard library, multi-file projects</p>
-        </div>
+        <span class="prompt">$</span> ./rake examples/demo.rk --emit-mlir
       </div>
     </section>
 
     <footer>
       <p>
         MIT License &middot;
-        <a href="https://github.com/KaiStarkk/rake-lang">GitHub</a> &middot;
-        <a href="https://github.com/KaiStarkk/tree-sitter-rake">Tree-sitter</a> &middot;
-        <a href="https://github.com/KaiStarkk/rake-vscode">VS Code</a>
+        <a href="https://github.com/KaiStarkk/rake-lang">GitHub</a>
       </p>
     </footer>
   </div>
